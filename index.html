@@ -130,6 +130,7 @@
       <!-- Formulário principal -->
       <div class="fade-up fade-up-3 mx-auto mt-10 max-w-xl" data-waitlist>
         <form class="flex flex-col gap-2 rounded-2xl glass p-2 shadow-2xl shadow-accent-900/30 sm:flex-row" novalidate>
+          <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute -left-[9999px] h-0 w-0 opacity-0" />
           <label for="email-hero" class="sr-only">O teu e-mail</label>
           <input id="email-hero" name="email" type="email" inputmode="email" autocomplete="email" required
                  placeholder="o.teu@email.com"
@@ -296,6 +297,7 @@
 
           <div class="mx-auto mt-8 max-w-xl" data-waitlist>
             <form class="flex flex-col gap-2 rounded-2xl glass p-2 sm:flex-row" novalidate>
+              <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute -left-[9999px] h-0 w-0 opacity-0" />
               <label for="email-cta" class="sr-only">O teu e-mail</label>
               <input id="email-cta" name="email" type="email" inputmode="email" autocomplete="email" required
                      placeholder="o.teu@email.com"
@@ -369,11 +371,11 @@
   <script>
     (function () {
       /*
-       * Para recolher os e-mails a sério, coloca aqui o URL de um serviço de
-       * formulários (ex.: Formspree, Getform, Basin). Os pedidos são enviados por POST com
-       * o campo "email". Vazio = só guarda no localStorage deste browser.
+       * URL do formulário no Formspree, no formato https://formspree.io/f/xxxxxxxx
+       * (o Formspree envia-te um e-mail por cada inscrição). Os pedidos vão por POST
+       * com o campo "email". Vazio = só guarda no localStorage deste browser.
        */
-      const WAITLIST_ENDPOINT = '';
+      const WAITLIST_ENDPOINT = 'https://formspree.io/f/mzedkdoe';
       const STORAGE_KEY = 'andy.waitlist';
       const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -435,6 +437,7 @@
             if (WAITLIST_ENDPOINT) {
               const body = new FormData();
               body.append('email', email);
+              body.append('_gotcha', form.elements._gotcha ? form.elements._gotcha.value : '');
               const res = await fetch(WAITLIST_ENDPOINT, { method: 'POST', body, headers: { Accept: 'application/json' } });
               if (!res.ok) throw new Error(res.status);
             }
