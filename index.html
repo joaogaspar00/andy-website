@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="pt-PT" class="scroll-smooth">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Andy — A tua workbar com o Claude ao lado</title>
+  <meta name="description" content="Andy é uma workbar flutuante para Windows que junta tarefas, notas ligadas, calendário, terminal e um chat com o Claude em cada tarefa. Entra na lista de espera." />
+  <meta name="theme-color" content="#0b090a" />
+
+  <meta property="og:title" content="Andy — A tua workbar com o Claude ao lado" />
+  <meta property="og:description" content="Tarefas, notas, calendário, terminal e o Claude — sempre a um clique, por cima de tudo." />
+  <meta property="og:type" content="website" />
+
+  <link rel="icon" href="assets/andy.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="assets/andy-128.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.tailwindcss.com/3.4.16"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            ink: { 950: '#0b090a', 900: '#121012', 850: '#161a1d', 800: '#1d2124', 700: '#2a2e31' },
+            paper: '#f5f3f4',
+            // Paleta da própria app (vermelho do Andy)
+            accent: { 300: '#ff9b9d', 400: '#f26b6e', 500: '#e5383b', 600: '#ba181b', 700: '#a4161a', 900: '#660708' },
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body { background: #0b090a; }
+    .glass {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%);
+    }
+    .text-gradient {
+      background: linear-gradient(120deg, #f5f3f4 15%, #ff9b9d 55%, #e5383b 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    /* Moldura das screenshots reais da app */
+    .shot {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .7), 0 0 0 1px rgba(0, 0, 0, .4);
+      background: #0b090a;
+    }
+    .fade-up { animation: fadeUp .7s cubic-bezier(.2,.7,.2,1) both; }
+    .fade-up-2 { animation-delay: .1s; }
+    .fade-up-3 { animation-delay: .2s; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+    .pop-in { animation: popIn .45s cubic-bezier(.2,.9,.3,1.2) both; }
+    @keyframes popIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) {
+      .fade-up, .pop-in { animation: none; }
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+
+<body class="font-sans text-paper antialiased selection:bg-accent-500/40">
+
+  <!-- Fundo decorativo -->
+  <div aria-hidden="true" class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+    <div class="grid-bg absolute inset-0"></div>
+    <div class="absolute -top-40 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-accent-600/20 blur-[120px]"></div>
+    <div class="absolute top-[55%] -right-40 h-[420px] w-[420px] rounded-full bg-accent-900/30 blur-[120px]"></div>
+  </div>
+
+  <!-- ============ HEADER ============ -->
+  <header class="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
+    <a href="#" class="flex items-center gap-2.5" aria-label="Andy — início">
+      <img src="assets/andy-64.png" width="32" height="32" alt="" class="h-8 w-8 rounded-lg" />
+      <span class="text-lg font-semibold tracking-tight">Andy</span>
+    </a>
+    <span class="inline-flex items-center gap-2 rounded-full border border-accent-400/30 bg-accent-500/10 px-3 py-1 text-xs font-medium text-accent-300">
+      <span class="relative flex h-1.5 w-1.5">
+        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-400 opacity-75"></span>
+        <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-400"></span>
+      </span>
+      Acesso antecipado
+    </span>
+  </header>
+
+  <main>
+    <!-- ============ HERO ============ -->
+    <section class="mx-auto max-w-6xl px-4 pb-10 pt-12 text-center sm:px-6 sm:pt-20">
+      <p class="fade-up mx-auto mb-6 inline-flex items-center gap-2 rounded-full glass px-3 py-1 text-xs text-white/60">
+        <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="currentColor"><path d="M3 5.5l7.5-1v7H3zM11.5 4.4L21 3v8.5h-9.5zM3 12.5h7.5v7L3 18.5zM11.5 12.5H21V21l-9.5-1.4z"/></svg>
+        Para Windows · Feito com o Claude Agent SDK
+      </p>
+
+      <h1 class="fade-up fade-up-2 mx-auto max-w-4xl text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
+        O teu trabalho inteiro,<br class="hidden sm:block" />
+        <span class="text-gradient">a um clique de distância.</span>
+      </h1>
+
+      <p class="fade-up fade-up-3 mx-auto mt-6 max-w-2xl text-base leading-relaxed text-white/60 sm:text-lg">
+        O Andy é uma workbar flutuante que vive junto à barra de tarefas e junta
+        <strong class="font-medium text-white/85">tarefas, notas ligadas, calendário, terminal</strong>
+        e um <strong class="font-medium text-white/85">chat com o Claude em cada tarefa</strong>.
+        Sem trocar de app, sem perder o foco.
+      </p>
+
+      <!-- Formulário principal -->
+      <div class="fade-up fade-up-3 mx-auto mt-10 max-w-xl" data-waitlist>
+        <form class="flex flex-col gap-2 rounded-2xl glass p-2 shadow-2xl shadow-accent-900/30 sm:flex-row" novalidate>
+          <label for="email-hero" class="sr-only">O teu e-mail</label>
+          <input id="email-hero" name="email" type="email" inputmode="email" autocomplete="email" required
+                 placeholder="o.teu@email.com"
+                 class="min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3.5 text-base text-paper placeholder:text-white/35 outline-none focus:bg-white/[.03]" />
+          <button type="submit"
+                  class="group inline-flex items-center justify-center gap-2 rounded-xl bg-accent-500 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-accent-400 active:scale-[.98] disabled:opacity-60">
+            <span data-label>Quero acesso antecipado</span>
+            <svg viewBox="0 0 24 24" class="h-4 w-4 transition group-hover:translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </form>
+        <p data-error class="mt-3 hidden text-sm text-rose-300" role="alert"></p>
+        <p data-trust class="mt-4 flex items-center justify-center gap-1.5 text-sm text-white/45">
+          <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+          Sem spam. Apenas acesso antecipado.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ PREVIEW (screenshots reais) ============ -->
+    <section id="preview" class="mx-auto max-w-6xl px-4 pb-24 sm:px-6" aria-label="Pré-visualização do Andy">
+      <div class="relative mx-auto max-w-[800px]">
+        <div class="absolute inset-x-10 -top-6 h-40 rounded-full bg-accent-500/25 blur-3xl" aria-hidden="true"></div>
+        <img src="assets/dashboard.png" width="800" height="650" alt="Dashboard do Andy com tarefas importantes, próximos eventos, projetos e o histórico git do projeto"
+             class="shot relative" />
+      </div>
+    </section>
+
+    <!-- ============ WORKBAR ============ -->
+    <section id="workbar" class="mx-auto max-w-3xl px-4 pb-24 text-center sm:px-6" aria-label="A workbar">
+      <div class="relative mx-auto w-[380px] max-w-full">
+        <div class="absolute inset-x-6 top-1/2 h-16 -translate-y-1/2 rounded-full bg-accent-500/30 blur-2xl" aria-hidden="true"></div>
+        <img src="assets/workbar.png" width="380" height="40" alt="A workbar do Andy, com um botão para cada janela"
+             class="relative block h-auto w-full rounded-[14px] shadow-[0_20px_40px_-10px_rgba(0,0,0,.8)]" />
+      </div>
+      <h2 class="mt-10 text-2xl font-bold tracking-tight sm:text-3xl">Uma barra. Tudo à mão.</h2>
+      <p class="mx-auto mt-4 max-w-xl leading-relaxed text-white/60">
+        A workbar fica sempre por cima das outras janelas, encostada à barra de tarefas, na horizontal ou na vertical.
+        Cada botão abre uma janela: Dashboard, Tarefas, Calendário, Notas, Definições, Info, Terminal e Agentes.
+      </p>
+    </section>
+
+    <!-- ============ FUNCIONALIDADES ============ -->
+    <section id="beneficios" class="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
+      <div class="mx-auto max-w-2xl text-center">
+        <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Menos alt-tab. Mais trabalho feito.</h2>
+        <p class="mt-4 text-white/55">Tudo o que usas no dia a dia, numa barra discreta que só aparece quando a chamas.</p>
+      </div>
+
+      <!-- Tarefas + Claude -->
+      <div class="mt-16 grid items-center gap-10 md:grid-cols-2 md:gap-14">
+        <div>
+          <p class="font-mono text-xs uppercase tracking-widest text-accent-300">Tarefas + Claude</p>
+          <h3 class="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">Cada tarefa tem o seu próprio Claude.</h3>
+          <p class="mt-4 leading-relaxed text-white/60">Abre uma tarefa, planeia em markdown e conversa com o Claude sobre ela. Vês o que ele propõe e cada ferramenta que quer usar, e nada acontece sem a tua aprovação.</p>
+          <ul class="mt-6 space-y-3 text-sm text-white/70">
+            <li class="flex gap-3"><svg viewBox="0 0 24 24" class="mt-0.5 h-4 w-4 shrink-0 text-accent-400" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>Um chat dedicado a cada tarefa</li>
+            <li class="flex gap-3"><svg viewBox="0 0 24 24" class="mt-0.5 h-4 w-4 shrink-0 text-accent-400" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>Aprovação explícita de cada ação</li>
+            <li class="flex gap-3"><svg viewBox="0 0 24 24" class="mt-0.5 h-4 w-4 shrink-0 text-accent-400" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>Estados, prioridades e tags à tua medida</li>
+          </ul>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-[380fr_520fr] sm:items-start">
+          <img src="assets/tasks.png" width="380" height="600" loading="lazy" alt="Lista de tarefas com prioridades, tags e datas de entrega" class="shot" />
+          <img src="assets/task-chat.png" width="520" height="620" loading="lazy" alt="Chat com o Claude dentro de uma tarefa, com a edição proposta e o resultado" class="shot" />
+        </div>
+      </div>
+
+      <!-- Notas -->
+      <div class="mt-24 grid items-center gap-10 md:grid-cols-2 md:gap-14">
+        <div class="md:order-2">
+          <p class="font-mono text-xs uppercase tracking-widest text-accent-300">Notas</p>
+          <h3 class="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">Notas que se ligam entre si.</h3>
+          <p class="mt-4 leading-relaxed text-white/60">Escreve em markdown, liga ideias com <span class="font-mono text-[13px] text-white/80">[[wikilinks]]</span> e vê os backlinks de cada nota, como no Obsidian, mas ao lado do teu trabalho.</p>
+          <ul class="mt-6 space-y-3 text-sm text-white/70">
+            <li class="flex gap-3"><svg viewBox="0 0 24 24" class="mt-0.5 h-4 w-4 shrink-0 text-accent-400" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>Editor visual, sem sintaxe à vista</li>
+            <li class="flex gap-3"><svg viewBox="0 0 24 24" class="mt-0.5 h-4 w-4 shrink-0 text-accent-400" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>Wikilinks e backlinks automáticos</li>
+            <li class="flex gap-3"><svg viewBox="0 0 24 24" class="mt-0.5 h-4 w-4 shrink-0 text-accent-400" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>Ficheiros markdown guardados no teu computador</li>
+          </ul>
+        </div>
+        <div class="md:order-1">
+          <img src="assets/note.png" width="720" height="520" loading="lazy" alt="Nota 'Redesign do checkout' com wikilinks a vermelho e a lista de backlinks" class="shot" />
+        </div>
+      </div>
+
+      <!-- Calendário -->
+      <div class="mt-24 grid items-center gap-10 md:grid-cols-2 md:gap-14">
+        <div>
+          <p class="font-mono text-xs uppercase tracking-widest text-accent-300">Calendário</p>
+          <h3 class="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">O que vem a seguir, sempre à vista.</h3>
+          <p class="mt-4 leading-relaxed text-white/60">Eventos em vista de mês, semana, dia ou lista. O Dashboard mostra-te logo ao abrir o que está para acontecer hoje e amanhã.</p>
+        </div>
+        <div class="mx-auto w-full max-w-[380px]">
+          <img src="assets/calendar.png" width="380" height="540" loading="lazy" alt="Calendário em vista de mês com eventos de outubro" class="shot" />
+        </div>
+      </div>
+
+      <!-- Mais coisas -->
+      <div class="mt-24 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <article class="rounded-2xl glass p-5">
+          <div class="grid h-9 w-9 place-items-center rounded-xl bg-accent-500/15 text-accent-300">
+            <svg viewBox="0 0 24 24" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="9" r="2.5"/><path d="M6 8.5v7M18 11.5c0 3-4 3-10.5 5"/></svg>
+          </div>
+          <h4 class="mt-4 font-semibold">Git à vista</h4>
+          <p class="mt-1.5 text-sm leading-relaxed text-white/55">Histórico de commits em grafo, troca de branch e pull requests sem sair da workbar.</p>
+        </article>
+        <article class="rounded-2xl glass p-5">
+          <div class="grid h-9 w-9 place-items-center rounded-xl bg-accent-500/15 text-accent-300">
+            <svg viewBox="0 0 24 24" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-5-6-5M12 19h8"/></svg>
+          </div>
+          <h4 class="mt-4 font-semibold">Terminal incluído</h4>
+          <p class="mt-1.5 text-sm leading-relaxed text-white/55">Um terminal integrado, a um clique, para não teres de abrir outra janela.</p>
+        </article>
+        <article class="rounded-2xl glass p-5">
+          <div class="grid h-9 w-9 place-items-center rounded-xl bg-accent-500/15 text-accent-300">
+            <svg viewBox="0 0 24 24" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 4v4M9 13v2M15 13v2"/></svg>
+          </div>
+          <h4 class="mt-4 font-semibold">Agentes e skills</h4>
+          <p class="mt-1.5 text-sm leading-relaxed text-white/55">Vê num só sítio os agentes e skills do Claude Code instalados, globais e do projeto.</p>
+        </article>
+        <article class="rounded-2xl glass p-5">
+          <div class="grid h-9 w-9 place-items-center rounded-xl bg-accent-500/15 text-accent-300">
+            <svg viewBox="0 0 24 24" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+          </div>
+          <h4 class="mt-4 font-semibold">Os teus dados são teus</h4>
+          <p class="mt-1.5 text-sm leading-relaxed text-white/55">Tarefas, eventos e notas ficam guardados no teu computador.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ COMO FUNCIONA ============ -->
+    <section id="como-funciona" class="mx-auto max-w-6xl px-4 py-24 sm:px-6">
+      <div class="mx-auto max-w-2xl text-center">
+        <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Pronto em três passos</h2>
+      </div>
+      <ol class="mx-auto mt-12 grid max-w-4xl gap-8 md:grid-cols-3 md:gap-6">
+        <li class="text-center md:text-left">
+          <span class="font-mono text-sm text-accent-300">01</span>
+          <h3 class="mt-2 font-semibold">Adiciona os teus projetos</h3>
+          <p class="mt-2 text-sm leading-relaxed text-white/55">Aponta o Andy para qualquer pasta do teu computador, ou cria um projeto novo, com git se quiseres.</p>
+        </li>
+        <li class="text-center md:text-left">
+          <span class="font-mono text-sm text-accent-300">02</span>
+          <h3 class="mt-2 font-semibold">A workbar fica por perto</h3>
+          <p class="mt-2 text-sm leading-relaxed text-white/55">Fica encostada à barra de tarefas, na horizontal ou na vertical. O Dashboard mostra-te logo o que importa hoje.</p>
+        </li>
+        <li class="text-center md:text-left">
+          <span class="font-mono text-sm text-accent-300">03</span>
+          <h3 class="mt-2 font-semibold">Trabalha com o Claude ao lado</h3>
+          <p class="mt-2 text-sm leading-relaxed text-white/55">Abre uma tarefa, planeia em markdown e pede ajuda ao Claude, sem sair do sítio onde estás.</p>
+        </li>
+      </ol>
+
+      <p class="mx-auto mt-12 max-w-2xl text-center text-sm text-white/45">
+        <span class="text-white/70">A seguir:</span> tags nas notas, pesquisa em todo o conteúdo e um grafo visual das ligações entre ideias.
+      </p>
+    </section>
+
+    <!-- ============ CTA FINAL ============ -->
+    <section id="lista-de-espera" class="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
+      <div class="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-accent-700/30 via-ink-900 to-ink-950 px-6 py-14 text-center sm:px-12 sm:py-20">
+        <div aria-hidden="true" class="absolute -top-24 left-1/2 h-64 w-[600px] -translate-x-1/2 rounded-full bg-accent-500/25 blur-3xl"></div>
+        <div class="relative">
+          <h2 class="mx-auto max-w-2xl text-3xl font-bold tracking-tight sm:text-5xl">Sê dos primeiros a experimentar o Andy.</h2>
+          <p class="mx-auto mt-4 max-w-lg text-white/60">Deixa o teu e-mail e avisamos-te assim que houver uma versão para instalar.</p>
+
+          <div class="mx-auto mt-8 max-w-xl" data-waitlist>
+            <form class="flex flex-col gap-2 rounded-2xl glass p-2 sm:flex-row" novalidate>
+              <label for="email-cta" class="sr-only">O teu e-mail</label>
+              <input id="email-cta" name="email" type="email" inputmode="email" autocomplete="email" required
+                     placeholder="o.teu@email.com"
+                     class="min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3.5 text-base text-paper placeholder:text-white/35 outline-none focus:bg-white/[.03]" />
+              <button type="submit"
+                      class="group inline-flex items-center justify-center gap-2 rounded-xl bg-accent-500 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-accent-400 active:scale-[.98] disabled:opacity-60">
+                <span data-label>Entrar na lista</span>
+                <svg viewBox="0 0 24 24" class="h-4 w-4 transition group-hover:translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </form>
+            <p data-error class="mt-3 hidden text-sm text-rose-300" role="alert"></p>
+            <p data-trust class="mt-4 text-sm text-white/45">Sem spam. Apenas acesso antecipado.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ RODAPÉ ============ -->
+  <footer class="border-t border-white/5">
+    <div class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-white/40 sm:flex-row sm:px-6">
+      <p class="inline-flex items-center gap-1.5">© <span data-year>2026</span> Andy. Feito em Portugal
+        <!-- Bandeira ondulada, ao estilo dos emojis do iPhone (desenhada em SVG para aparecer igual em Windows) -->
+        <svg viewBox="0 0 30 22" class="h-[22px] w-[30px] shrink-0 drop-shadow-[0_2px_3px_rgba(0,0,0,.55)]" role="img" aria-label="Bandeira de Portugal">
+          <defs>
+            <clipPath id="pt-wave"><path d="M1 4.5C5 1.5 9 7.5 15 4.5S25 1.5 29 4.5V17.5C25 20.5 21 14.5 15 17.5S5 20.5 1 17.5Z"/></clipPath>
+            <linearGradient id="pt-shade" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stop-color="#000" stop-opacity=".05"/>
+              <stop offset=".18" stop-color="#fff" stop-opacity=".22"/>
+              <stop offset=".4" stop-color="#000" stop-opacity=".16"/>
+              <stop offset=".65" stop-color="#fff" stop-opacity=".2"/>
+              <stop offset=".85" stop-color="#000" stop-opacity=".18"/>
+              <stop offset="1" stop-color="#000" stop-opacity=".08"/>
+            </linearGradient>
+            <linearGradient id="pt-gloss" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#fff" stop-opacity=".28"/>
+              <stop offset=".5" stop-color="#fff" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <g clip-path="url(#pt-wave)">
+            <rect width="30" height="22" fill="#d6141f"/>
+            <rect width="12" height="22" fill="#0a7d36"/>
+            <circle cx="12" cy="11" r="4.2" fill="#ffd400"/>
+            <circle cx="12" cy="11" r="3.1" fill="#d6141f"/>
+            <path d="M10.1 8.7h3.8v3.1a1.9 1.9 0 0 1-3.8 0z" fill="#fff" stroke="#ffd400" stroke-width=".4"/>
+            <path d="M11 9.6h2v1.9h-2z" fill="#1c3f9e"/>
+            <rect width="30" height="22" fill="url(#pt-shade)"/>
+            <rect width="30" height="22" fill="url(#pt-gloss)"/>
+          </g>
+        </svg>
+      </p>
+      <nav class="flex flex-wrap justify-center gap-x-6 gap-y-2">
+        <a href="#beneficios" class="transition hover:text-white/80">Funcionalidades</a>
+        <a href="#como-funciona" class="transition hover:text-white/80">Como funciona</a>
+        <a href="#lista-de-espera" class="transition hover:text-white/80">Lista de espera</a>
+      </nav>
+    </div>
+  </footer>
+
+  <!-- Modelo do estado de sucesso -->
+  <template id="success-template">
+    <div class="pop-in rounded-2xl border border-emerald-400/25 bg-emerald-400/[.07] p-6 text-center" role="status" aria-live="polite">
+      <div class="mx-auto grid h-11 w-11 place-items-center rounded-full bg-emerald-400/15 text-emerald-300">
+        <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+      </div>
+      <p class="mt-4 text-lg font-semibold" data-title></p>
+      <p class="mt-1 text-sm text-white/60" data-body></p>
+    </div>
+  </template>
+
+  <script>
+    (function () {
+      /*
+       * Para recolher os e-mails a sério, coloca aqui o URL de um serviço de
+       * formulários (ex.: Formspree, Getform, Basin). Os pedidos são enviados por POST com
+       * o campo "email". Vazio = só guarda no localStorage deste browser.
+       */
+      const WAITLIST_ENDPOINT = '';
+      const STORAGE_KEY = 'andy.waitlist';
+      const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+      function readList() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+      }
+      function writeList(list) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch { /* armazenamento indisponível */ }
+      }
+      function displayName(email) {
+        const local = email.split('@')[0].split(/[._+-]/)[0];
+        return local ? local.charAt(0).toUpperCase() + local.slice(1) : '';
+      }
+
+      function showSuccess(container, email, alreadyIn) {
+        const node = document.getElementById('success-template').content.cloneNode(true);
+        const name = displayName(email);
+        node.querySelector('[data-title]').textContent = alreadyIn
+          ? `Já estavas na lista${name ? ', ' + name : ''}!`
+          : `Estás dentro${name ? ', ' + name : ''}! 🎉`;
+        node.querySelector('[data-body]').textContent = alreadyIn
+          ? `Vamos avisar-te em ${email} quando o acesso abrir.`
+          : `Obrigado por te juntares. Vamos escrever-te para ${email} assim que o Andy estiver pronto a instalar.`;
+        container.replaceChildren(node);
+      }
+
+      // Se este browser já se inscreveu, as duas zonas mostram logo o estado de sucesso.
+      function syncAll(email, alreadyIn) {
+        document.querySelectorAll('[data-waitlist]').forEach((c) => showSuccess(c, email, alreadyIn));
+      }
+
+      document.querySelectorAll('[data-waitlist]').forEach((container) => {
+        const form = container.querySelector('form');
+        const input = form.querySelector('input[type="email"]');
+        const button = form.querySelector('button');
+        const label = button.querySelector('[data-label]');
+        const error = container.querySelector('[data-error]');
+
+        function setError(msg) {
+          error.textContent = msg;
+          error.classList.toggle('hidden', !msg);
+          input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+        }
+        input.addEventListener('input', () => setError(''));
+
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const email = input.value.trim().toLowerCase();
+          if (!email) return setError('Escreve o teu e-mail para entrares na lista.');
+          if (!EMAIL_RE.test(email)) return setError('Esse e-mail não parece válido. Confirma se está bem escrito.');
+
+          const list = readList();
+          if (list.some((r) => r.email === email)) return syncAll(email, true);
+
+          const original = label.textContent;
+          button.disabled = true;
+          label.textContent = 'A enviar…';
+          try {
+            if (WAITLIST_ENDPOINT) {
+              const body = new FormData();
+              body.append('email', email);
+              const res = await fetch(WAITLIST_ENDPOINT, { method: 'POST', body, headers: { Accept: 'application/json' } });
+              if (!res.ok) throw new Error(res.status);
+            }
+            list.push({ email, joinedAt: new Date().toISOString() });
+            writeList(list);
+            syncAll(email, false);
+          } catch {
+            setError('Não foi possível registar agora. Tenta outra vez daqui a pouco.');
+            button.disabled = false;
+            label.textContent = original;
+          }
+        });
+      });
+
+      const existing = readList();
+      if (existing.length) syncAll(existing[existing.length - 1].email, true);
+
+      document.querySelector('[data-year]').textContent = new Date().getFullYear();
+    })();
+  </script>
+</body>
+</html>
